@@ -61,6 +61,48 @@ with st.chat_message("assistant"):
     response = st.write_stream(stream)
 ```
 
+## Agent reasoning / status indicators
+
+Use `st.status` to show the progress of a long-running or multi-step task (tool calls, retrieval, reasoning steps). Pass `type="compact"` for a minimal, low-chrome inline indicator — ideal for agent/reasoning UIs where the default bordered box is too heavy. Don't hand-roll this with CSS `st.markdown` divs or `st.expander`, and don't settle for a bare `st.write`. Put the status where the work runs so its steps appear as soon as the task runs. Don't gate it behind a button that exists only to launch the task — but running it in response to user input (e.g. `if prompt := st.chat_input(...)`) is fine.
+
+```python
+import streamlit as st
+
+# GOOD: compact, low-chrome status that renders as soon as the app runs (not
+# behind a button). expanded=True shows the steps immediately; omit it or pass
+# False for a collapsed toggle.
+with st.status("Thinking...", type="compact", expanded=True) as status:
+    st.write("Searching for context...")
+    status.update(label="Summarising results...")  # relabel mid-task; the with
+    st.write("Comparing the top results...")        # block auto-completes on exit
+```
+
+```python
+# BAD: a full bordered box (omitting type="compact") is not low-chrome.
+with st.status("Thinking..."):
+    st.write("Searching for context...")
+
+# BAD: faking it with an expander or CSS divs — st.status(type="compact") exists.
+with st.expander("Thinking..."):
+    st.write("Searching for context...")
+st.markdown("<div class='status'>Thinking...</div>", unsafe_allow_html=True)
+
+# BAD: gating behind a button whose only job is to launch the task — nothing
+# renders on load. (Running in response to real input like st.chat_input is fine;
+# a bare "Run" button that only kicks off the task is not.)
+if st.button("Run agent"):
+    with st.status("Working...", type="compact"):
+        st.write("Searching for context...")
+```
+
+Notes:
+- **Render it on load.** Write the step lines (`st.write(...)`) directly inside the `with` block so the status shows as soon as the task runs. Don't wrap it in a button that exists only to launch the task; running it in response to genuine user input (e.g. `if prompt := st.chat_input(...)`) is fine.
+- **Stream into it.** `st.write_stream(...)` works inside the `with st.status(...)` block — streaming reasoning steps or tokens into a compact status is the common agent pattern.
+- `type` is `"default"` (bordered box) or `"compact"` (minimal inline toggle). Pass it as a keyword: `type="compact"`.
+- `state` must be one of `"running"` (default), `"complete"`, or `"error"` — any other literal raises `StreamlitAPIException`. Same constraint on `status.update(state=...)`.
+- The `with` block auto-marks the status `"complete"` on exit; call `status.update(label=..., state=..., expanded=...)` to change it mid-task.
+- The compact status renders as a collapsible toggle; use `expanded=True` if you want the steps shown without a click.
+
 ## Chat message avatars
 
 Streamlit provides default avatars for "user" and "assistant" roles—only customize if you have a specific need. You can use icons or images:
