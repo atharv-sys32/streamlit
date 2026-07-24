@@ -460,7 +460,7 @@ export const StyledLinkIcon = styled.a(({ theme }) => ({
 
   svg: {
     // same color as the tooltip-icon
-    stroke: theme.colors.fadedText60,
+    stroke: theme.colors.bodyText,
     strokeWidth: theme.sizes.defaultStrokeWidth,
   },
 
